@@ -1,0 +1,23 @@
+@font-face {
+  font-family: "SEGA LOGO FONT";
+  font-style: normal;
+  font-weight: normal;
+  src: local("SEGA LOGO FONT"), url("./SEGA.woff") format("woff");
+}
+
+.topnav-centered {
+  float: none;
+  position: absolute;
+  top: 1%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@media screen and (max-width: 600px) {
+  .topnav-centered {
+    position: relative;
+    top: 0;
+    left: 0;
+    transform: none;
+  }
+}

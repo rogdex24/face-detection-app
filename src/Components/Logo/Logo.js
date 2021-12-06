@@ -6,7 +6,7 @@ import "./Logo.css";
 const Logo = () => {
   return (
     <div className="box ma4 mt0">
-      <Tilt>
+      <Tilt className="Tilt">
         <div
           className="Tilt-inner br2 shadow-2"
           style={{

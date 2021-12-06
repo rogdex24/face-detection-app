@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import Particles from "react-tsparticles";
 import Clarifai from "clarifai";
-import FaceRecognition from "./Components/FaceRecognition/FaceRecognition";
+import FaceDetection from "./Components/FaceDetection/FaceDetection";
 import Navigation from "./Components/Navigation/Navigation";
 import Signin from "./Components/Signin/Signin";
 import Register from "./Components/Register/Register";
@@ -15,7 +15,7 @@ const app = new Clarifai.App({
 });
 
 const particlesOptions = {
-  fpsLimit: 60,
+  fpsLimit: 40,
   particles: {
     color: {
       value: "#ffffff",
@@ -35,7 +35,7 @@ const particlesOptions = {
       enable: true,
       outMode: "bounce",
       random: false,
-      speed: 1,
+      speed: 0.5,
       straight: false,
     },
     number: {
@@ -65,7 +65,7 @@ class App extends Component {
     this.state = {
       input: "",
       imageUrl: "",
-      box: {},
+      box: [],
       route: "signin",
       isSignedIn: false,
       user: {
@@ -78,29 +78,38 @@ class App extends Component {
     };
   }
 
-  calculateFaceLocation = (clarifaiFace) => {
-    // const clarifaiFace =
-    // data.outputs[0].data.regions[0].region_info.bounding_box;
-    const image = document.getElementById("inputimage");
+  calculateFaceLocation = (data) => {
+    const regions = data.outputs[0].data.regions;
+    const image = document.getElementById("inputImage");
     const width = Number(image.width);
     const height = Number(image.height);
-    return {
-      leftCol: clarifaiFace.left_col * width,
-      topRow: clarifaiFace.top_row * height,
-      rightCol: width - clarifaiFace.right_col * width,
-      bottomRow: height - clarifaiFace.bottom_row * height,
-    };
+    const allBoxes = [];
+    let boxLoc;
+    for (let i = 0; i < regions.length; i += 1) {
+      boxLoc = regions[i].region_info.bounding_box;
+      allBoxes.push({
+        leftCol: boxLoc.left_col * width,
+        rightCol: width - boxLoc.right_col * width,
+        topRow: boxLoc.top_row * height,
+        bottomRow: height - boxLoc.bottom_row * height,
+      });
+    }
+    return allBoxes;
   };
 
   // No. of Faces
   // console.log(data.outputs[0].data.regions.length);
 
-  displayFaceBox = (box) => {
-    this.setState({ box: box });
+  displayFaceBox = (boxObj) => {
+    this.setState({ box: boxObj });
   };
 
   onInputChange = (event) => {
-    this.setState({ input: event.target.value });
+    this.setState({
+      input: event.target.value,
+      imageUrl: event.target.value,
+      box: [],
+    });
   };
 
   onButtonSubmit = () => {
@@ -109,13 +118,7 @@ class App extends Component {
       .predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
       .then((response) => {
         console.log("hi", response);
-        let array = [];
-        for (let i = 0; i < response.outputs[0].data.regions.length; i += 1) {
-          array.push(
-            response.outputs[0].data.regions[i].region_info.bounding_box
-          );
-        }
-        // this.displayFaceBox(this.calculateFaceLocation(response.outputs[0].data.regions[i].region_info.bounding_box));
+        this.displayFaceBox(this.calculateFaceLocation(response));
       })
       .catch((err) => console.log(err));
   };
@@ -146,15 +149,44 @@ class App extends Component {
               onInputChange={this.onInputChange}
               onButtonSubmit={this.onButtonSubmit}
             />
-            <FaceRecognition box={box} imageUrl={imageUrl} />
+            <FaceDetection box={box} imageUrl={imageUrl} />
+            {this.state.imageUrl && (
+              <div
+                className="ImageCount"
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexDirection: "column",
+                  width: "30%",
+                }}
+              >
+                <h2
+                  style={{
+                    transition: "all 0.3s",
+                    margin: "2px",
+                    fontSize: "2rem",
+                  }}
+                >
+                  Face Count
+                </h2>
+                <h1
+                  style={{
+                    fontSize: "8rem",
+                    fontFamily: "sans-serif",
+                    fontWeight: "bold",
+                    margin: 0,
+                  }}
+                >
+                  {this.state.box.length}
+                </h1>
+              </div>
+            )}
           </div>
         ) : route === "signin" ? (
           <Signin loadUser={this.loadUser} onRouteChange={this.onRouteChange} />
         ) : (
-          <Register
-            loadUser={this.loadUser}
-            onRouteChange={this.onRouteChange}
-          />
+          <Register onRouteChange={this.onRouteChange} />
         )}
       </div>
     );
